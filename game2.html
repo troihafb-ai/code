@@ -151,8 +151,8 @@ function playerJump() {
 function playerDash() {
   if (player.dead || player.dashCooldown > 0) return;
   player.dashing = true;
-  player.dashTimer = 12;
-  player.dashCooldown = 45;
+  player.dashTimer = 24;
+  player.dashCooldown = 50;
   player.vy = 0;
   sfxDash();
   burst(player.x - 10, player.y, neonPink(), 12, 3);
