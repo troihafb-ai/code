@@ -273,17 +273,16 @@ class Orb {
 let gridOffset = 0;
 
 // Level generation
-let lastPlatformX = 0;
+let nextPlatformX = 0; // screen-relative X where next platform should spawn
 function generateChunk() {
-  const startX = lastPlatformX;
-  const endX = startX + W + 200;
-  let x = startX;
+  // Generate platforms ahead of the screen (screen-relative coordinates)
+  const targetX = W + 400;
   
-  while (x < endX) {
-    const gap = 80 + Math.random() * (60 + difficulty * 10);
-    x += gap;
-    const pw = 60 + Math.random() * (120 - difficulty * 5);
-    const py = 250 + Math.random() * 180;
+  while (nextPlatformX < targetX) {
+    const gap = 80 + Math.random() * (50 + Math.min(difficulty, 5) * 8);
+    nextPlatformX += gap;
+    const pw = 70 + Math.random() * (130 - Math.min(difficulty, 8) * 5);
+    const py = 250 + Math.random() * 170;
     
     // Platform type based on difficulty
     let type = 'normal';
@@ -291,24 +290,25 @@ function generateChunk() {
     if (difficulty > 2 && r < 0.2) type = 'moving';
     if (difficulty > 3 && r < 0.1) type = 'crumble';
     
-    const plat = new Platform(x, py, Math.max(pw, 50), type);
+    const platW = Math.max(pw, 55);
+    const plat = new Platform(nextPlatformX, py, platW, type);
     platforms.push(plat);
     
     // Add spikes on some platforms
-    if (Math.random() < 0.15 * difficulty && pw > 60) {
-      const spikeX = x + 10 + Math.random() * (pw - 40);
+    if (Math.random() < 0.12 * Math.min(difficulty, 4) && platW > 65) {
+      const spikeX = nextPlatformX + 10 + Math.random() * (platW - 40);
       obstacles.push(new Obstacle(spikeX, py - 20));
     }
     
     // Add orbs above some platforms
-    if (Math.random() < 0.4) {
+    if (Math.random() < 0.45) {
       const orbCount = 1 + Math.floor(Math.random() * 3);
       for (let i = 0; i < orbCount; i++) {
-        orbs.push(new Orb(x + pw/2 + (i - orbCount/2) * 25, py - 50 - Math.random() * 40));
+        orbs.push(new Orb(nextPlatformX + platW/2 + (i - orbCount/2) * 25, py - 50 - Math.random() * 40));
       }
     }
     
-    lastPlatformX = x + pw;
+    nextPlatformX += platW;
   }
 }
 
@@ -322,8 +322,7 @@ function startGame() {
   
   // Starting platform
   platforms.push(new Platform(50, 380, 250, 'normal'));
-  lastPlatformX = 300;
-  generateChunk();
+  nextPlatformX = 300;
   generateChunk();
 }
 
@@ -455,8 +454,9 @@ function update() {
   orbs = orbs.filter(o => o.x > -50);
   particles = particles.filter(p => p.life > 0);
   
-  // Generate more
-  if (lastPlatformX - distance < W + 400) generateChunk();
+  // Generate more platforms - reduce nextPlatformX by scroll amount and generate if needed
+  nextPlatformX -= speed;
+  if (nextPlatformX < W + 200) generateChunk();
   
   // Screen shake decay
   if (screenShake > 0) screenShake--;
